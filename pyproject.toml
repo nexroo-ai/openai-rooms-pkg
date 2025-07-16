@@ -4,44 +4,42 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openapi-rooms-pkg"
-description = "OpenAI LLM addon package for AI rooms script"
-authors = [
-    {name = "Your Name", email = "your.email@example.com"}
-]
-license = {text = "MIT"}
+version = "1.1.4"
+description = "OpenAI rooms package for AI rooms script"
 readme = "README.md"
-requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "SYNVEX", email = "contact@synvex.com"}
+]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
+requires-python = ">=3.9"
 dependencies = [
-    "loguru>=0.6.0",
+    "loguru>=0.7.0",
     "openai>=0.27.0",
     "pydantic>=2.0.0",
 ]
-dynamic = ["version"]
-
-[project.urls]
-Homepage = "https://github.com/yourusername/openapi-rooms-pkg"
-Repository = "https://github.com/yourusername/openapi-rooms-pkg"
-Issues = "https://github.com/yourusername/openapi-rooms-pkg/issues"
-
-[tool.setuptools.dynamic]
-version = {attr = "openapi_rooms_pkg.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-openapi_rooms_pkg = ["py.typed"]
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.semantic_release]
-version_variable = "src/openapi_rooms_pkg/__init__.py:__version__"
-build_command = "pip install build && python -m build"
+branch = "main"
+upload_to_pypi = false
+upload_to_release = true
+version_toml = ["pyproject.toml:project.version"]
+build_command = "python -m build"
+
+[project.urls]
+Homepage = "https://github.com/synvex/openapi-rooms-pkg"
+Repository = "https://github.com/synvex/openapi-rooms-pkg"
