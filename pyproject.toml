@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openapi-rooms-pkg"
+version = "0.1.0" 
+description = "OpenAI LLM addon package for AI rooms script"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "loguru>=0.6.0",
+    "openai>=0.27.0",
+    "pydantic>=2.0.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/openapi-rooms-pkg"
+Repository = "https://github.com/yourusername/openapi-rooms-pkg"
+Issues = "https://github.com/yourusername/openapi-rooms-pkg/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "openapi_rooms_pkg.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+openapi_rooms_pkg = ["py.typed"]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+build_command = "pip install build && python -m build"
