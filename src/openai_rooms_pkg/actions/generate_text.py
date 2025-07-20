@@ -33,10 +33,13 @@ def generate_text(config: CustomAddonConfig, prompt: str, model: str, max_tokens
     logger.debug(f"Input received: {prompt}, {model}, {max_tokens}, {temperature}")
     logger.debug(f"Config: {config}")
     
-    
     credentials = CredentialsRegistry()
-    if credentials.get("openai_api_key"):
-        logger.debug(f"openai_api_key available: {credentials.get('openai_api_key')}")
+    
+    logger.debug(f"Available credential keys: {credentials.keys()}")
+    logger.debug(f"Has openai_api_key: {credentials.has('openai_api_key')}")
+    
+    api_key = credentials.get("openai_api_key")
+    logger.debug(f"Retrieved API key: {api_key[:10] if api_key else 'None'}...")
     
     api_key = credentials.get("openai_api_key")
     client = OpenAI(api_key=api_key)
