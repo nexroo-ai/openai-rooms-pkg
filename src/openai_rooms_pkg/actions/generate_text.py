@@ -35,10 +35,10 @@ def generate_text(config: CustomAddonConfig, prompt: str, model: str, max_tokens
     
     
     credentials = CredentialsRegistry()
-    if credentials.get("openai_key"):
-        logger.debug(f"openai_key available: {credentials.get('openai_key')}")
+    if credentials.get("openai_api_key"):
+        logger.debug(f"openai_api_key available: {credentials.get('openai_api_key')}")
     
-    api_key = credentials.get("openai_key")
+    api_key = credentials.get("openai_api_key")
     client = OpenAI(api_key=api_key)
     
     response = client.chat.completions.create(
