@@ -1,4 +1,4 @@
 from .baseconfig import BaseAddonConfig
-from .addonconfig import OpenAIAddonConfig
+from .addonconfig import CustomAddonConfig  
 
-__all__ = ["BaseAddonConfig", "OpenAIAddonConfig"]
+__all__ = ["BaseAddonConfig", "CustomAddonConfig"]

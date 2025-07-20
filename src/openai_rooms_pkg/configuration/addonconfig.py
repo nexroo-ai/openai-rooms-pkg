@@ -2,7 +2,7 @@ from pydantic import Field, model_validator
 from .baseconfig import BaseAddonConfig
 
 
-class OpenAIAddonConfig(BaseAddonConfig):
+class CustomAddonConfig(BaseAddonConfig):
     type: str = Field("database", description="Database addon type")
     host: str = Field(..., description="Database host")
     database: str = Field(..., description="Database name")

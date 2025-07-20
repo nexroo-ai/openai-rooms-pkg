@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from .base import ActionResponse, OutputBase, TokensSchema
-from openai_rooms_pkg.configuration import OpenAIAddonConfig
+from openai_rooms_pkg.configuration import CustomAddonConfig  
 from openai_rooms_pkg.services.credentials import CredentialsRegistry
 
 from openai import OpenAI
@@ -23,7 +23,7 @@ class ActionOutput(OutputBase):
 
 # entrypoint is always the same name as the action file name.
 # the script use the function name, to simplify we will use the same name as the file.
-def generate_text(config: OpenAIAddonConfig, prompt: str, model: str, max_tokens: Optional[int] = None, temperature: Optional[float] = None) -> ActionResponse:
+def generate_text(config: CustomAddonConfig, prompt: str, model: str, max_tokens: Optional[int] = None, temperature: Optional[float] = None) -> ActionResponse:
 
 
     # if not isinstance(inputs, ActionInput):
