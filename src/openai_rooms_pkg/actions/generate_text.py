@@ -1,6 +1,7 @@
 from loguru import logger
 from typing import Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 from .base import ActionResponse, OutputBase, TokensSchema
 from openai_rooms_pkg.configuration import CustomAddonConfig  
@@ -34,16 +35,18 @@ def generate_text(config: CustomAddonConfig, prompt: str, model: str, max_tokens
     
     
     credentials = CredentialsRegistry()
-    if credentials.has("db_user"):
-        logger.debug(f"Database user available: {credentials.get('db_user')}")
+    if credentials.get("openai_key"):
+        logger.debug(f"openai_key available: {credentials.get('openai_key')}")
     
+    api_key = credentials.get("openai_key")
+    client = OpenAI(api_key=api_key)
     
-    response = OpenAI.ChatCompletion.create(
-        model=config.model,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=max_tokens,
-        temperature=temperature
-    )
+    response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+            temperature=temperature
+        )
     
     tokens = TokensSchema(
         stepAmount=response.usage.total_tokens,
@@ -54,7 +57,11 @@ def generate_text(config: CustomAddonConfig, prompt: str, model: str, max_tokens
     
     code = 200
 
-    output = ActionOutput(data={"processed": prompt + "- processed -"})
-    
+    output = ActionOutput(
+        generated_text=response.choices[0].message.content,
+        model_used=model,
+        usage=response.usage.model_dump(),
+        timestamp=datetime.now().isoformat()
+    )    
     
     return ActionResponse(output=output, tokens=tokens, message=message, code=code)
