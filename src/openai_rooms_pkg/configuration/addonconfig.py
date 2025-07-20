@@ -1,17 +1,16 @@
 from pydantic import Field, model_validator
 from .baseconfig import BaseAddonConfig
 
-
 class CustomAddonConfig(BaseAddonConfig):
-    type: str = Field("database", description="Database addon type")
-    host: str = Field(..., description="Database host")
-    database: str = Field(..., description="Database name")
-    port: int = Field(5432, description="Database port")
+    type: str = Field("openai", description="OpenAI addon type")
+    
+    # Paramètres OpenAI
+    model: str = Field("gpt-3.5-turbo", description="OpenAI model")
+    temperature: float = Field(0.7, description="Temperature")
+    max_tokens: int = Field(1000, description="Max tokens")
     
     @model_validator(mode='after')
-    def validate_db_secrets(self):
-        required_secrets = ["db_password", "db_user"]
-        missing = [s for s in required_secrets if s not in self.secrets]
-        if missing:
-            raise ValueError(f"Missing database secrets: {missing}")
+    def validate_openai_secrets(self):
+        if "openai_api_key" not in self.secrets:
+            raise ValueError("openai_api_key secret is required")
         return self
