@@ -1,3 +1,4 @@
-from .openai_service import OpenAIService
+from .example import demo_service
+from .credentials import CredentialsRegistry
 
-__all__ = ['OpenAIService']
+__all__ = ["demo_service", "CredentialsRegistry"]

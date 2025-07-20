@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "openapi-rooms-pkg"
-version = "1.0.0"
-description = "OpenAI rooms package for AI rooms script"
+name = "openai-rooms-pkg"
+version = "1.0.4"
+description = "openai rooms package for AI rooms script"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -23,8 +23,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "loguru>=0.7.0",
-    "openai>=0.27.0",
-    "pydantic>=2.0.0",
+    "openai>=1.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -40,6 +39,10 @@ upload_to_release = true
 version_toml = ["pyproject.toml:project.version"]
 build_command = "python -m build"
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.12.3"
+pre-commit = "^4.2.0"
+
 [project.urls]
-Homepage = "https://github.com/synvex/openapi-rooms-pkg"
-Repository = "https://github.com/synvex/openapi-rooms-pkg"
+Homepage = "https://github.com/synvex/openai-rooms-pkg"
+Repository = "https://github.com/synvex/openai-rooms-pkg"

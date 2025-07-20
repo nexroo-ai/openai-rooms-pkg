@@ -1,9 +1,8 @@
+from typing import Any, Dict
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
 
-class BaseAddonConfig(BaseModel):
-    """Base configuration class for all addon configurations"""
-    
+
+class BaseAddonConfig(BaseModel):    
     id: str = Field(..., description="Unique identifier for the addon")
     type: str = Field(..., description="Type of the addon")
     name: str = Field(..., description="Display name of the addon")
@@ -14,3 +13,4 @@ class BaseAddonConfig(BaseModel):
     
     class Config:
         extra = "allow"
+        validate_assignment = True

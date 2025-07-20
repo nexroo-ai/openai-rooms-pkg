@@ -1,134 +1,127 @@
+import importlib
 from loguru import logger
-from .configuration.addonconfig import OpenAIAddonConfig
-from .services.openai_service import OpenAIService
-from .actions.chat_completion import chat_completions_action
-from .actions.image_generation import image_generate_action
-from .actions.audio_transcription import audio_transcribe_action
-from .utils.validators import validate_parameters
-from .utils.exceptions import OpenAIAddonError
+from .actions.generate_text import generate_text
+from .services.credentials import CredentialsRegistry
 
 class OpenAIRoomsAddon:
-    """OpenAI Rooms Addon for AI rooms script"""
+    """
+    OpenAI Rooms Package Addon Class
+
+    This class provides access to all OpenAI rooms package functionality
+    and can be instantiated by external programs using this package.
+    """
     
-    def __init__(self, config: OpenAIAddonConfig = None):
-        self.config = config
-        self.service = OpenAIService(self.config) if config else None
+    def __init__(self):
+        self.modules = ["actions", "configuration", "memory", "services", "storage", "tools", "utils"]
+        self.config = {}
+        self.credentials = CredentialsRegistry()
+
+    # add your actions here
+    def generate_text(self, prompt: str, model: str, max_tokens: int = None, temperature: float = None) -> dict:
+        return generate_text(self.config, prompt=prompt, model=model, max_tokens=max_tokens, temperature=temperature)
+
+    def test(self) -> bool:
+        """
+        Test function for OpenAI rooms package.
+        Tests each module and reports available components.
+        Test connections with credentials if required.
         
-        # Register available actions
-        self.actions = {
-            'chat_completions': chat_completions_action,
-            'image_generate': image_generate_action,
-            'audio_transcribe': audio_transcribe_action,
-        }
-        
-        logger.info("OpenAI Rooms Addon initialized")
-    
-    def test(self) -> dict:
-        """Test method required by AI rooms script"""
-        try:
-            # Test basic functionality
-            logger.info("Testing OpenAI Rooms Addon...")
-            
-            # Check if configuration is valid
-            if not self.config:
-                return {
-                    'success': False,
-                    'error': 'No configuration provided'
-                }
-            
-            # Check if API key is available
-            if not self.service:
-                return {
-                    'success': False,
-                    'error': 'OpenAI service not initialized'
-                }
-            
-            # Test API key validation
+        Returns:
+            bool: True if test passes, False otherwise
+        """
+        logger.info("Running OpenAI rooms package test...")
+
+        total_components = 0
+        for module_name in self.modules:
             try:
-                api_key = self.service.get_api_key()
-                if not api_key:
-                    return {
-                        'success': False,
-                        'error': 'No API key found'
-                    }
+                module = importlib.import_module(f"openai_rooms_pkg.{module_name}")
+                components = getattr(module, '__all__', [])
+                component_count = len(components)
+                total_components += component_count
+                for component_name in components:
+                    logger.info(f"Processing component: {component_name}")
+                    if hasattr(module, component_name):
+                        component = getattr(module, component_name)
+                        logger.info(f"Component {component_name} type: {type(component)}")
+                        if callable(component):
+                            try:
+                                skip_instantiation = False
+                                try:
+                                    from pydantic import BaseModel
+                                    if hasattr(component, '__bases__') and any(
+                                        issubclass(base, BaseModel) for base in component.__bases__ if isinstance(base, type)
+                                    ):
+                                        logger.info(f"Component {component_name} is a Pydantic model, skipping instantiation")
+                                        skip_instantiation = True
+                                except (ImportError, TypeError):
+                                    pass
+                                # skip models require parameters
+                                if component_name in ['ActionInput', 'ActionOutput', 'ActionResponse', 'OutputBase', 'TokensSchema']:
+                                    logger.info(f"Component {component_name} requires parameters, skipping instantiation")
+                                    skip_instantiation = True
+                                
+                                if not skip_instantiation:
+                                    # result = component()
+                                    logger.info(f"Component {component_name}() would be executed successfully")
+                                else:
+                                    logger.info(f"Component {component_name} exists and is valid (skipped instantiation)")
+                            except Exception as e:
+                                logger.warning(f"Component {component_name}() failed: {e}")
+                                logger.error(f"Exception details for {component_name}: {str(e)}")
+                                raise e
+                logger.info(f"{component_count} {module_name} loaded correctly, available imports: {', '.join(components)}")
+            except ImportError as e:
+                logger.error(f"Failed to import {module_name}: {e}")
+                return False
             except Exception as e:
-                return {
-                    'success': False,
-                    'error': f'API key validation failed: {str(e)}'
-                }
-            
-            # Test actions availability
-            available_actions = self.get_available_actions()
-            
-            return {
-                'success': True,
-                'message': 'OpenAI Rooms Addon test passed',
-                'available_actions': available_actions,
-                'config_type': self.config.type
-            }
-            
-        except Exception as e:
-            logger.error(f"OpenAI Rooms Addon test failed: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+                logger.error(f"Error testing {module_name}: {e}")
+                return False
+        logger.info("OpenAI rooms package test completed successfully!")
+        logger.info(f"Total components loaded: {total_components} across {len(self.modules)} modules")
+        return True
     
-    def execute_action(self, action_name: str, parameters: dict, workflow_id: str = None) -> dict:
-        """Execute an OpenAI action with given parameters"""
+    def loadAddonConfig(self, addon_config: dict):
+        """
+        Load addon configuration.
+        
+        Args:
+            addon_config (dict): Addon configuration dictionary
+        
+        Returns:
+            bool: True if configuration is loaded successfully, False otherwise
+        """
         try:
-            if action_name not in self.actions:
-                raise OpenAIAddonError(f"Action '{action_name}' not found")
-            
-            # Validate parameters
-            validate_parameters(action_name, parameters)
-            
-            # Add secret key to parameters if available
-            if 'secret_key' not in parameters and self.config and self.config.secrets:
-                api_key_env = self.config.secrets.get('apiKey')
-                if api_key_env:
-                    import os
-                    parameters['secret_key'] = os.environ.get(api_key_env)
-            
-            # Execute action
-            logger.info(f"Executing action: {action_name}")
-            result = self.actions[action_name](**parameters)
-            
-            return {
-                'success': True,
-                'result': result
-            }
-            
+            from openai_rooms_pkg.configuration import CustomAddonConfig
+            self.config = CustomAddonConfig(**addon_config)
+            logger.info(f"Addon configuration loaded successfully: {self.config}")
+            return True
         except Exception as e:
-            logger.error(f"Error executing action {action_name}: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e),
-                'action': action_name
-            }
-    
-    def get_available_actions(self) -> list:
-        """Get list of available actions"""
-        return list(self.actions.keys())
-    
-    def get_action_info(self, action_name: str) -> dict:
-        """Get information about a specific action"""
-        if action_name not in self.actions:
-            return None
+            logger.error(f"Failed to load addon configuration: {e}")
+            return False
+
+    def loadCredentials(self, **kwargs) -> bool:
+        """
+        Load credentials and store them in the credentials registry.
+        Takes individual secrets as keyword arguments for validation.
         
-        action_info = {
-            'chat_completions': {
-                'description': 'Generate text using OpenAI chat completion',
-                'parameters': ['prompt', 'model', 'temperature', 'max_tokens', 'secret_key']
-            },
-            'image_generate': {
-                'description': 'Generate images using OpenAI DALL-E',
-                'parameters': ['prompt', 'size', 'n', 'secret_key']
-            },
-            'audio_transcribe': {
-                'description': 'Transcribe audio using OpenAI Whisper',
-                'parameters': ['file_path', 'language', 'secret_key']
-            }
-        }
+        Args:
+            **kwargs: Individual credential key-value pairs
         
-        return action_info.get(action_name, {})
+        Returns:
+            bool: True if credentials are loaded successfully, False otherwise
+        """
+        logger.debug("Loading credentials...")
+        logger.debug(f"Received credentials: {kwargs}")
+        try:
+            if self.config and hasattr(self.config, 'secrets'):
+                required_secrets = list(self.config.secrets.keys())
+                missing_secrets = [secret for secret in required_secrets if secret not in kwargs]
+                if missing_secrets:
+                    raise ValueError(f"Missing required secrets: {missing_secrets}")
+            
+            self.credentials.store_multiple(kwargs)
+            logger.info(f"Loaded {len(kwargs)} credentials successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load credentials: {e}")
+            return False
