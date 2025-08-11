@@ -179,4 +179,4 @@ For this, use the apprioriate commit message syntax for semantic release in gith
 
 ## Developers / Mainteners
 
-- Adrien EPPLING :  [Contact me](adrienesofts@gmail.com)
+- Adrien EPPLING :  [adrienesofts@gmail.com](mailto:adrienesofts@gmail.com)
