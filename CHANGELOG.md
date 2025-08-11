@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.7 (2025-08-11)
+
+### Bug Fixes
+
+- Upload template for doc
+  ([`d98d5ea`](https://github.com/synvex-ai/openai-rooms-pkg/commit/d98d5ea512951ef859c3a671c2191a3e7c913520))
+
+
 ## v1.0.6 (2025-07-20)
 
 
