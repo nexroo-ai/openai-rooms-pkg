@@ -1,1 +1,4 @@
-# do not remove, required for package imports
+# FILE: src/openai_rooms_pkg/__init__.py
+from .addon import OpenaiRoomsAddon
+
+__all__ = ["OpenaiRoomsAddon"]

@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+# FILE: src/openai_rooms_pkg/base.py
 from typing import Optional
+from pydantic import BaseModel
 
 
 class TokensSchema(BaseModel):
@@ -8,12 +9,11 @@ class TokensSchema(BaseModel):
 
 
 class OutputBase(BaseModel):
-    """for output. Should be overwritted per action."""
     pass
 
 
 class ActionResponse(BaseModel):
     output: OutputBase
     tokens: TokensSchema
-    message: Optional[str] = None
-    code: Optional[int] = None
+    message: Optional[str]
+    code: Optional[int]
