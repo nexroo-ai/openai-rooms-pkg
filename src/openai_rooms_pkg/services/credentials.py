@@ -15,7 +15,7 @@ class CredentialsRegistry:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
-                cls._instance._store = {}  # type: Dict[str, str]
+                cls._instance._store = {}
         return cls._instance
 
     def store(self, key: str, value: str) -> None:

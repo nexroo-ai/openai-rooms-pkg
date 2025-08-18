@@ -1,19 +1,21 @@
-# FILE: src/openai_rooms_pkg/base.py
-from typing import Optional
-from pydantic import BaseModel
-
-
-class TokensSchema(BaseModel):
-    stepAmount: int
-    totalCurrentAmount: int
-
+from typing import Any, Optional, Dict, Generic, TypeVar
+from pydantic import BaseModel, Field
 
 class OutputBase(BaseModel):
+    """Base pour les sorties d’actions."""
     pass
 
+class TokensSchema(BaseModel):
+    """Suivi token minimal utilisé par le script d’orchestration."""
+    stepAmount: int = 0
+    totalCurrentAmount: int = 0
 
-class ActionResponse(BaseModel):
-    output: OutputBase
+T = TypeVar("T", bound=OutputBase)
+
+class ActionResponse(Generic[T], BaseModel):
+    """Envelope standard de réponse d’action."""
+    output: T
     tokens: TokensSchema
-    message: Optional[str]
-    code: Optional[int]
+    message: str = "ok"
+    code: int = 200
+    meta: Optional[Dict[str, Any]] = None

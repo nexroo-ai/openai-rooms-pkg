@@ -1,153 +1,210 @@
-# FILE: src/openai_rooms_pkg/actions/chat_complete.py
+# FILE: src/openai_rooms_pkg/actions/chat_completion.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+import json
+import os
 import time
+from typing import Any, Dict, List, Optional
 
-import httpx
+import requests
 from loguru import logger
-from pydantic import BaseModel, Field
 
-from openai_rooms_pkg.actions.base import ActionResponse, OutputBase, TokensSchema
-from openai_rooms_pkg.configuration import CustomAddonConfig
-from openai_rooms_pkg.services.credentials import CredentialsRegistry
+__all__ = ["chat_completion"]
 
 
-class ActionInput(BaseModel):
-    messages: List[Dict[str, Any]] = Field(..., description="Chat messages in OpenAI format (role/content)")
-    model: Optional[str] = Field(default=None)
-    temperature: Optional[float] = Field(default=0.7)
-    top_p: Optional[float] = None
-    max_tokens: Optional[int] = None
-    stop: Optional[Union[List[str], str]] = None
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    seed: Optional[int] = None
-    metadata: Optional[Dict[str, Any]] = None
+def _cfg_get(cfg: Any, key: str, default: Any = None):
+    """Accès clé-valeure tolérant (Pydantic model OU dict)."""
+    if cfg is None:
+        return default
+    # Pydantic model -> attribut
+    if hasattr(cfg, key):
+        try:
+            val = getattr(cfg, key)
+            return default if val is None else val
+        except Exception:
+            pass
+    # dict-like
+    if isinstance(cfg, dict):
+        return cfg.get(key, default)
+    return default
 
 
-class ActionOutput(OutputBase):
-    result: str
-    raw: Optional[Dict[str, Any]] = None
-    model: str
-    usage: Optional[Dict[str, Any]] = None
+def _cfg_get_nested(cfg: Any, *keys, default=None):
+    cur = cfg
+    for k in keys:
+        if cur is None:
+            return default
+        if hasattr(cur, k):
+            cur = getattr(cur, k)
+        elif isinstance(cur, dict):
+            cur = cur.get(k)
+        else:
+            return default
+    return default if cur is None else cur
 
 
-def _build_headers(cfg: CustomAddonConfig, creds: CredentialsRegistry) -> Dict[str, str]:
-    api_key_name = cfg.secrets.get("api_key", "")
-    api_key_val = creds.get(api_key_name)
-    if not api_key_val:
-        raise ValueError("OpenAI api_key not found in CredentialsRegistry.")
+def _build_headers(api_key: str, project: Optional[str], organization: Optional[str]) -> Dict[str, str]:
     headers = {
-        "Authorization": f"Bearer {api_key_val}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    org_key = cfg.secrets.get("organization_key")
-    proj_key = cfg.secrets.get("project_key")
-    org = cfg.organization or (creds.get(org_key) if org_key else None)
-    proj = cfg.project or (creds.get(proj_key) if proj_key else None)
-    if org:
-        headers["OpenAI-Organization"] = org
-    if proj:
-        headers["OpenAI-Project"] = proj
+    if api_key.startswith("sk-proj-"):
+        proj = project or os.getenv("OPENAI_PROJECT")
+        if proj:
+            headers["OpenAI-Project"] = proj
+    if organization:
+        headers["OpenAI-Organization"] = organization
     return headers
 
 
-def chat_complete(config: CustomAddonConfig, action_input: ActionInput) -> ActionResponse:
-    logger.debug("chat_complete: starting with inputs")
-    logger.debug(
-        f"messages count={len(action_input.messages)}, model={action_input.model or config.model_default}, "
-        f"temperature={action_input.temperature}, max_tokens={action_input.max_tokens}"
+def _normalize_messages(
+    messages: Optional[List[Dict[str, str]]],
+    system: Optional[str],
+    user_message: Optional[str],
+) -> List[Dict[str, str]]:
+    if messages and isinstance(messages, list):
+        return messages
+    built: List[Dict[str, str]] = []
+    if system:
+        built.append({"role": "system", "content": system})
+    if user_message:
+        built.append({"role": "user", "content": user_message})
+    return built
+
+
+def chat_completion(
+    config: Any,
+    *,
+    # deux styles d'entrée
+    messages: Optional[List[Dict[str, str]]] = None,
+    system: Optional[str] = None,
+    message: Optional[str] = None,
+    # options
+    max_tokens: Optional[int] = None,
+    temperature: Optional[float] = None,
+    # sources alternatives de clé
+    api_key: Optional[str] = None,
+    # compat no-op
+    tools: Optional[Dict[str, Any]] = None,
+    tool_registry: Optional[Any] = None,
+    observer_callback: Optional[Any] = None,
+    addon_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Implémentation simple style Anthropic mais pour OpenAI (/v1/chat/completions).
+    Supporte:
+      - messages=[...]
+      - system + message
+    Fonctionne avec config Pydantic OU dict.
+    """
+
+    model = _cfg_get(config, "model") or _cfg_get(config, "model_default") or "gpt-4o-mini"
+    temperature = float(temperature if temperature is not None else _cfg_get(config, "temperature", 0.7))
+    mt_from_cfg = _cfg_get(config, "max_tokens")
+    max_tokens = int(max_tokens if max_tokens is not None else (mt_from_cfg or 0)) or None
+    request_timeout = int(_cfg_get(config, "request_timeout", 60))
+    max_retries = int(_cfg_get(config, "max_retries", 2))
+
+    # clé API: priorité param -> config.secrets.api_key -> ENV
+    api_key = (
+        api_key
+        or _cfg_get_nested(config, "secrets", "api_key")
+        or os.getenv("OPENAI_API_KEY")
+        or os.getenv("OPENAI_API_TOKEN")
     )
+    if not api_key:
+        err = "OpenAI api_key is missing (param api_key, config.secrets.api_key, or env OPENAI_API_KEY)."
+        logger.error(f"[TYPE: OPENAI] {err}")
+        return _error_payload(err)
 
-    credentials = CredentialsRegistry()
-    try:
-        headers = _build_headers(config, credentials)
-        redacted_headers = {**headers, "Authorization": "Bearer ****"}
-        logger.debug(f"chat_complete: headers={redacted_headers}")
+    project = _cfg_get(config, "project") or os.getenv("OPENAI_PROJECT")
+    organization = _cfg_get(config, "organization") or os.getenv("OPENAI_ORGANIZATION")
+    api_base = _cfg_get(config, "api_base") or "https://api.openai.com/v1"
+    url = f"{api_base.rstrip('/')}/chat/completions"
 
-        base_url = (config.api_base or "https://api.openai.com/v1").rstrip("/")
-        url = f"{base_url}/chat/completions"
+    norm_messages = _normalize_messages(messages, system, message)
+    if not norm_messages:
+        err = "No messages provided (use either 'messages' array or 'system' + 'message')."
+        logger.error(f"[TYPE: OPENAI] {err}")
+        return _error_payload(err)
 
-        payload: Dict[str, Any] = {
-            "model": action_input.model or config.model_default,
-            "messages": action_input.messages,
-            "temperature": action_input.temperature,
-        }
-        if action_input.top_p is not None:
-            payload["top_p"] = action_input.top_p
-        if action_input.max_tokens is not None:
-            payload["max_tokens"] = action_input.max_tokens
-        if action_input.stop is not None:
-            payload["stop"] = action_input.stop
-        if action_input.presence_penalty is not None:
-            payload["presence_penalty"] = action_input.presence_penalty
-        if action_input.frequency_penalty is not None:
-            payload["frequency_penalty"] = action_input.frequency_penalty
-        if action_input.seed is not None:
-            payload["seed"] = action_input.seed
-        if action_input.metadata is not None:
-            payload["metadata"] = action_input.metadata
+    payload: Dict[str, Any] = {"model": model, "temperature": temperature, "messages": norm_messages}
+    if max_tokens is not None:
+        payload["max_tokens"] = max_tokens
 
-        logger.debug(f"chat_complete: POST {url}")
-        max_attempts = max(1, config.max_retries + 1)
-        last_err_msg = None
-        for attempt in range(max_attempts):
-            try:
-                with httpx.Client(timeout=config.request_timeout, proxies=config.proxies) as client:
-                    resp = client.post(url, headers=headers, json=payload)
-                status = resp.status_code
-                logger.debug(f"chat_complete: status_code={status}")
-                if status >= 400:
-                    if status == 429 or 500 <= status < 600:
-                        last_err_msg = resp.text
-                        if attempt < max_attempts - 1:
-                            time.sleep(0.8 * (2 ** attempt))
-                            continue
-                    output = ActionOutput(result="", raw=None, model=payload.get("model") or "", usage=None)
-                    return ActionResponse(
-                        output=output,
-                        tokens=TokensSchema(stepAmount=0, totalCurrentAmount=0),
-                        message=f"OpenAI error {status}: {resp.text}",
-                        code=429 if status == 429 else (502 if 500 <= status < 600 else 400),
-                    )
+    headers = _build_headers(api_key=api_key, project=project, organization=organization)
 
+    last_error_text: Optional[str] = None
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"[TYPE: OPENAI] chat_completion call with model={model}, temp={temperature}, max_tokens={max_tokens or 'default'}")
+            resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=request_timeout)
+
+            if 200 <= resp.status_code < 300:
                 data = resp.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "") or ""
-                usage = data.get("usage")
-                step_tokens = 0
-                if isinstance(usage, dict):
-                    step_tokens = usage.get("total_tokens") or (
-                        (usage.get("prompt_tokens") or 0) + (usage.get("completion_tokens") or 0)
-                    ) or 0
+                choice = (data.get("choices") or [{}])[0]
+                content = ""
+                if isinstance(choice.get("message"), dict):
+                    content = choice["message"].get("content") or ""
+                elif "text" in choice:
+                    content = choice.get("text") or ""
 
-                output = ActionOutput(
-                    result=content,
-                    raw=data,
-                    model=data.get("model") or payload.get("model") or "",
-                    usage=usage,
-                )
-                tokens = TokensSchema(stepAmount=int(step_tokens), totalCurrentAmount=int(step_tokens))
-                return ActionResponse(output=output, tokens=tokens, message="ok", code=200)
-            except httpx.RequestError as e:
-                last_err_msg = str(e)
-                logger.debug(f"chat_complete: request error on attempt {attempt+1}: {last_err_msg}")
-                if attempt < max_attempts - 1:
-                    time.sleep(0.8 * (2 ** attempt))
-                    continue
-                output = ActionOutput(result="", raw=None, model=payload.get("model") or "", usage=None)
-                return ActionResponse(
-                    output=output,
-                    tokens=TokensSchema(stepAmount=0, totalCurrentAmount=0),
-                    message=f"Request error: {last_err_msg}",
-                    code=502,
-                )
-    except Exception as e:
-        logger.debug(f"chat_complete: exception {e}")
-        output = ActionOutput(result="", raw=None, model=action_input.model or (config.model_default or ""), usage=None)
-        return ActionResponse(
-            output=output,
-            tokens=TokensSchema(stepAmount=0, totalCurrentAmount=0),
-            message=str(e),
-            code=400,
-        )
+                usage = data.get("usage") or {}
+                input_tokens = usage.get("prompt_tokens") or usage.get("input_tokens") or 0
+                output_tokens = usage.get("completion_tokens") or usage.get("output_tokens") or 0
+                total_tokens = usage.get("total_tokens") or (input_tokens + output_tokens)
+
+                return {
+                    "output": {
+                        "response": content,
+                        "model": model,
+                        "usage": {
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
+                            "total_tokens": total_tokens,
+                        },
+                        "stop_reason": choice.get("finish_reason") or data.get("finish_reason") or "stop",
+                    },
+                    "tokens": {"stepAmount": total_tokens, "totalCurrentAmount": total_tokens},
+                    "message": "ok",
+                    "code": 200,
+                    "meta": {"id": data.get("id")},
+                }
+
+            try:
+                last_error_text = json.dumps(resp.json(), ensure_ascii=False, indent=2)
+            except Exception:
+                last_error_text = resp.text
+
+            logger.error(f"[TYPE: OPENAI] chat_completion failed: Error code: {resp.status_code} - {last_error_text}")
+
+            if resp.status_code in (429, 500, 502, 503, 504) and attempt < max_retries:
+                time.sleep(0.75 * (attempt + 1))
+                continue
+
+            return _error_payload(f"Error code: {resp.status_code} - {last_error_text}")
+
+        except requests.RequestException as e:
+            last_error_text = str(e)
+            logger.error(f"[TYPE: OPENAI] chat_completion exception: {last_error_text}")
+            if attempt < max_retries:
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            return _error_payload(last_error_text)
+
+    return _error_payload(last_error_text or "Unknown error")
+
+
+def _error_payload(msg: str) -> Dict[str, Any]:
+    return {
+        "output": {
+            "response": f"Error: {msg}",
+            "model": None,
+            "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+            "stop_reason": "error",
+        },
+        "tokens": {"stepAmount": 0, "totalCurrentAmount": 0},
+        "message": msg,
+        "code": 500,
+        "meta": None,
+    }
