@@ -2,6 +2,26 @@
 
 <!-- version list -->
 
+## v1.0.9 (2025-09-17)
+
+### Bug Fixes
+
+- Add README and refactor secrets management
+  ([`77a16e6`](https://github.com/synvex-ai/openai-rooms-pkg/commit/77a16e61920d5d54d9d338862895546e087d5469))
+
+- Add README and refactor secrets management
+  ([`523b539`](https://github.com/synvex-ai/openai-rooms-pkg/commit/523b53999b609bc7dc4457c9eb8a68acdb79f68b))
+
+- Bug
+  ([`649dde9`](https://github.com/synvex-ai/openai-rooms-pkg/commit/649dde90aca92ea9d2066236de6e2f4487634b19))
+
+- Rework
+  ([`6fb6079`](https://github.com/synvex-ai/openai-rooms-pkg/commit/6fb60790303065ec088b11528459c67f74fb3c98))
+
+- Rework chat_completion bug
+  ([`9810d90`](https://github.com/synvex-ai/openai-rooms-pkg/commit/9810d90cc38b20dc4eb85f939eae62190b430b23))
+
+
 ## v1.0.8 (2025-08-11)
 
 
