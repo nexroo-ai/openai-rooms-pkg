@@ -19,12 +19,17 @@ class OpenaiRoomsAddon:
         self.observer_callback = None
         self.addon_id = None
 
+<<<<<<< Updated upstream
     @property
     def logger(self):
         class PrefixedLogger:
             def __init__(self, addon_type):
                 self.addon_type = addon_type
                 self._logger = logger
+=======
+    def generate_text(self, prompt: str, model: str, max_tokens: int = None, temperature: float = None) -> dict:
+        return generate_text(self.config, prompt=prompt, model=model, max_tokens=max_tokens, temperature=temperature)
+>>>>>>> Stashed changes
 
             def debug(self, message): self._logger.debug(f"[TYPE: {self.addon_type.upper()}] {message}")
             def info(self, message): self._logger.info(f"[TYPE: {self.addon_type.upper()}] {message}")
@@ -60,9 +65,45 @@ class OpenaiRoomsAddon:
         for module_name in self.modules:
             try:
                 module = importlib.import_module(f"openai_rooms_pkg.{module_name}")
+<<<<<<< Updated upstream
                 components = getattr(module, "__all__", [])
                 total_components += len(components)
                 self.logger.info(f"{len(components)} {module_name} loaded correctly, available imports: {', '.join(components)}")
+=======
+                components = getattr(module, '__all__', [])
+                component_count = len(components)
+                total_components += component_count
+                for component_name in components:
+                    logger.info(f"Processing component: {component_name}")
+                    if hasattr(module, component_name):
+                        component = getattr(module, component_name)
+                        logger.info(f"Component {component_name} type: {type(component)}")
+                        if callable(component):
+                            try:
+                                skip_instantiation = False
+                                try:
+                                    from pydantic import BaseModel
+                                    if hasattr(component, '__bases__') and any(
+                                        issubclass(base, BaseModel) for base in component.__bases__ if isinstance(base, type)
+                                    ):
+                                        logger.info(f"Component {component_name} is a Pydantic model, skipping instantiation")
+                                        skip_instantiation = True
+                                except (ImportError, TypeError):
+                                    pass
+                                if component_name in ['ActionInput', 'ActionOutput', 'ActionResponse', 'OutputBase', 'TokensSchema']:
+                                    logger.info(f"Component {component_name} requires parameters, skipping instantiation")
+                                    skip_instantiation = True
+                                
+                                if not skip_instantiation:
+                                    logger.info(f"Component {component_name}() would be executed successfully")
+                                else:
+                                    logger.info(f"Component {component_name} exists and is valid (skipped instantiation)")
+                            except Exception as e:
+                                logger.warning(f"Component {component_name}() failed: {e}")
+                                logger.error(f"Exception details for {component_name}: {str(e)}")
+                                raise e
+                logger.info(f"{component_count} {module_name} loaded correctly, available imports: {', '.join(components)}")
+>>>>>>> Stashed changes
             except ImportError as e:
                 self.logger.error(f"Failed to import {module_name}: {e}")
                 return False

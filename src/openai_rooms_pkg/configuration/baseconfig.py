@@ -1,12 +1,17 @@
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 
+<<<<<<< Updated upstream
 class BaseAddonConfig(BaseModel):
     id: Optional[str] = None
     type: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
     enabled: bool = True
+=======
+class RequiredSecretsBase(BaseModel):
+    pass
+>>>>>>> Stashed changes
 
     # champs courants
     model: Optional[str] = None
