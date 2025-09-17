@@ -3,13 +3,15 @@ from loguru import logger
 from .actions.generate_text import generate_text
 from .services.credentials import CredentialsRegistry
 
-class OpenAIRoomsAddon:
+class OpenaiRoomsAddon:
     """
     OpenAI Rooms Package Addon Class
 
     This class provides access to all OpenAI rooms package functionality
     and can be instantiated by external programs using this package.
     """
+    
+    type = "agent"
     
     def __init__(self):
         self.modules = ["actions", "configuration", "memory", "services", "storage", "tools", "utils"]
