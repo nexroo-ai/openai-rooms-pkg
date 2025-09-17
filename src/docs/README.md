@@ -3,7 +3,7 @@
 ## Overview
 
 Addon for Rooms AI to interact with the OpenAI API (Chat Completions).
-It allows generating text from prompts with configurable parameters (model, temperature, tokens).
+It allows generating text from prompts using configuration-defined defaults.
 
 **Addon Type:** `openai`
 
@@ -98,9 +98,8 @@ Generate text using the OpenAI Chat Completions API.
 **Parameters:**
 
 - `prompt` (string, required): User input to generate a response.
-- `model` (string, required): OpenAI model (e.g., `gpt-3.5-turbo`, `gpt-4o-mini`).
-- `max_tokens` (integer, optional): Maximum number of tokens to generate.
-- `temperature` (float, optional): Sampling temperature.
+
+> ⚠️ All other parameters (`model`, `temperature`, `max_tokens`) are defined in the addon **configuration**.
 
 **Output Structure:**
 
@@ -116,10 +115,7 @@ Generate text using the OpenAI Chat Completions API.
   "id": "step-generate-text-1",
   "action": "openai-1::generate_text",
   "parameters": {
-    "prompt": "Write a short poem about the beauty of nature.",
-    "model": "gpt-3.5-turbo",
-    "max_tokens": 300,
-    "temperature": 0.7
+    "prompt": "Write a short poem about the beauty of nature."
   }
 }
 ```
