@@ -2,7 +2,7 @@
 
 ## Overview
 
-Addon for Rooms AI to interact with the OpenAI API (Chat Completions).
+Addon for Rooms AI to interact with the OpenAI AP.
 It allows generating text from prompts using configuration-defined defaults.
 
 **Addon Type:** `openai`
@@ -10,6 +10,8 @@ It allows generating text from prompts using configuration-defined defaults.
 ## Features
 
 - Text generation using OpenAI’s Chat Completions endpoint.
+- Centralized configuration for model, temperature, and token limits.
+- Built-in test utility to validate modules and components.
 
 ## Add to Rooms AI using poetry
 
@@ -85,9 +87,25 @@ This OpenAI addon adds these specific configuration fields:
 Create a `.env` file in your workflow directory:
 
 ```bash
-# .env file
 ENV_OPENAI_API_KEY=sk-xxxxxxx
 ```
+
+## How to get your OpenAI API key
+
+1. Create or sign in to your OpenAI account at https://platform.openai.com/.
+2. In the left sidebar click **View API keys** (or go to https://platform.openai.com/account/api-keys).
+3. Click **Create new secret key**. Give it a descriptive name (e.g., "ai-rooms-script").
+4. Copy the generated secret **once** and paste it into your `.env` file as `ENV_OPENAI_API_KEY`. Example:
+
+```bash
+ENV_OPENAI_API_KEY=sk-XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+5. **Important security notes**
+   - Treat this key like a password: **do not commit** it to Git, do not share it in plaintext. Add `.env` to `.gitignore`.
+   - If the key is ever leaked, **revoke** it immediately from the OpenAI dashboard and create a new one.
+   - Optionally create scoped or limited keys via the OpenAI dashboard or use organization/billing restrictions to limit cost exposure.
+   - For CI/CD, inject the secret via your CI provider's secret manager (GitHub Actions Secrets, GitLab CI variables, etc.).
 
 ## Available Actions
 
