@@ -1,6 +1,8 @@
 from typing import Any, Dict
 from pydantic import BaseModel, Field
 
+class RequiredSecretsBase(BaseModel):
+    pass
 
 class BaseAddonConfig(BaseModel):    
     id: str = Field(..., description="Unique identifier for the addon")

@@ -1,33 +1,42 @@
+# FILE: src/openai_rooms_pkg/services/credentials.py
+from threading import RLock
 from typing import Dict, Optional
-from loguru import logger
+
+# Pylance-friendly singleton without inline attr annotations triggering reportInvalidTypeForm.
 
 
 class CredentialsRegistry:
-    _instance: Optional['CredentialsRegistry'] = None
-    _credentials: Dict[str, str] = {}
-    
-    def __new__(cls) -> 'CredentialsRegistry':
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+    """In-memory singleton registry for secrets (key -> secret value)."""
+
+    _instance = None  # type: Optional["CredentialsRegistry"]
+    _lock = RLock()
+
+    def __new__(cls) -> "CredentialsRegistry":
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+                cls._instance._store = {}
         return cls._instance
-    
+
     def store(self, key: str, value: str) -> None:
-        self._credentials[key] = value
-        logger.debug(f"Stored credential: {key}")
-    
-    def store_multiple(self, credentials: Dict[str, str]) -> None:
-        for key, value in credentials.items():
-            self.store(key, value)
-    
+        if not isinstance(key, str) or not key:
+            raise ValueError("CredentialsRegistry.store: key must be a non-empty string")
+        self._store[key] = value
+
+    def store_multiple(self, mapping: Dict[str, str]) -> None:
+        if not isinstance(mapping, dict):
+            raise ValueError("CredentialsRegistry.store_multiple: mapping must be a dict[str, str]")
+        for k, v in mapping.items():
+            self.store(k, v)
+
     def get(self, key: str) -> Optional[str]:
-        return self._credentials.get(key)
-    
+        return self._store.get(key)
+
     def has(self, key: str) -> bool:
-        return key in self._credentials
-    
+        return key in self._store
+
     def clear(self) -> None:
-        self._credentials.clear()
-        logger.debug("Cleared all credentials")
-    
-    def keys(self) -> list:
-        return list(self._credentials.keys())
+        self._store.clear()
+
+    def keys(self) -> list[str]:
+        return list(self._store.keys())
