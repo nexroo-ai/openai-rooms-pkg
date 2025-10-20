@@ -1,5 +1,7 @@
 from pydantic import Field, model_validator
+
 from .baseconfig import BaseAddonConfig, RequiredSecretsBase
+
 
 class CustomRequiredSecrets(RequiredSecretsBase):
     openai_api_key: str = Field(..., description="OpenAI API key environment variable name stored under `secrets`.")

@@ -1,7 +1,10 @@
 import importlib
+
 from loguru import logger
+
 from .actions.generate_text import generate_text
 from .services.credentials import CredentialsRegistry
+
 
 class OpenaiRoomsAddon:
     def __init__(self):

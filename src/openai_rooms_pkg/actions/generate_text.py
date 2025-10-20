@@ -1,11 +1,14 @@
-from loguru import logger
-from typing import Optional, Dict, Any
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Any
+
+from loguru import logger
+from openai import OpenAI
+from pydantic import BaseModel
+
+from openai_rooms_pkg.configuration import CustomAddonConfig
 
 from .base import ActionResponse, OutputBase, TokensSchema
-from openai_rooms_pkg.configuration import CustomAddonConfig
-from openai import OpenAI
+
 
 class ActionInput(BaseModel):
     prompt: str
@@ -13,7 +16,7 @@ class ActionInput(BaseModel):
 class ActionOutput(OutputBase):
     generated_text: str
     model_used: str
-    usage: Dict[str, Any]
+    usage: dict[str, Any]
     timestamp: str
 
 class ErrorOutput(OutputBase):
@@ -53,7 +56,7 @@ def generate_text(config: CustomAddonConfig, prompt: str) -> ActionResponse:
         totalCurrentAmount=response.usage.total_tokens,
     )
 
-    usage_obj: Dict[str, Any] = {
+    usage_obj: dict[str, Any] = {
         "prompt_tokens": getattr(response.usage, "prompt_tokens", None),
         "completion_tokens": getattr(response.usage, "completion_tokens", None),
         "total_tokens": getattr(response.usage, "total_tokens", None),

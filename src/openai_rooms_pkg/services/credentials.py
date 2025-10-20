@@ -1,6 +1,6 @@
 # FILE: src/openai_rooms_pkg/services/credentials.py
 from threading import RLock
-from typing import Dict, Optional
+from typing import Optional
 
 # Pylance-friendly singleton without inline attr annotations triggering reportInvalidTypeForm.
 
@@ -23,7 +23,7 @@ class CredentialsRegistry:
             raise ValueError("CredentialsRegistry.store: key must be a non-empty string")
         self._store[key] = value
 
-    def store_multiple(self, mapping: Dict[str, str]) -> None:
+    def store_multiple(self, mapping: dict[str, str]) -> None:
         if not isinstance(mapping, dict):
             raise ValueError("CredentialsRegistry.store_multiple: mapping must be a dict[str, str]")
         for k, v in mapping.items():

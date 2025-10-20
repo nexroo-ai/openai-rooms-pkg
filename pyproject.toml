@@ -32,6 +32,30 @@ where = ["src"]
 [tool.setuptools.package-dir]
 "" = "src"
 
+
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "W191",  # indentation contains tabs
+]
+per-file-ignores = {"__init__.py" = ["F401"], "tests/*" = ["F401", "F811"]}
+
 [tool.semantic_release]
 branch = "main"
 upload_to_pypi = false

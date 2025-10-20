@@ -1,5 +1,5 @@
 # FILE: src/openai_rooms_pkg/tools/base.py
-from typing import Dict, Callable, Any
+from typing import Any, Callable
 
 
 class ToolRegistry:
@@ -10,15 +10,15 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self.functions: Dict[str, Callable] = {}
-        self.tool_definitions: Dict[str, Dict[str, Any]] = {}
-        self.tool_max_retries: Dict[str, int] = {}
+        self.functions: dict[str, Callable] = {}
+        self.tool_definitions: dict[str, dict[str, Any]] = {}
+        self.tool_max_retries: dict[str, int] = {}
 
     def register_tools(
         self,
-        tool_functions: Dict[str, Callable],
-        tool_descriptions: Dict[str, str] | None = None,
-        tool_max_retries: Dict[str, int] | None = None,
+        tool_functions: dict[str, Callable],
+        tool_descriptions: dict[str, str] | None = None,
+        tool_max_retries: dict[str, int] | None = None,
     ):
         tool_descriptions = tool_descriptions or {}
         tool_max_retries = tool_max_retries or {}
@@ -42,10 +42,11 @@ class ToolRegistry:
             "input_schema": self._convert_annotations_to_schema(func),
         }
 
-    def _convert_annotations_to_schema(self, func: Callable) -> Dict[str, Any]:
+    def _convert_annotations_to_schema(self, func: Callable) -> dict[str, Any]:
         try:
-            from pydantic import create_model
             import inspect
+
+            from pydantic import create_model
 
             sig = inspect.signature(func)
             if not sig.parameters:
@@ -68,7 +69,7 @@ class ToolRegistry:
             # Fallback very permissive schema
             return {"type": "object", "properties": {}, "required": []}
 
-    def get_tools_for_action(self) -> Dict[str, Any]:
+    def get_tools_for_action(self) -> dict[str, Any]:
         return self.tool_definitions.copy()
 
     def get_function(self, action_name: str) -> Callable | None:
