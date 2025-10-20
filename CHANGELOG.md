@@ -2,6 +2,23 @@
 
 <!-- version list -->
 
+## v1.0.10 (2025-10-20)
+
+### Bug Fixes
+
+- Doc
+  ([`bbd2379`](https://github.com/synvex-ai/openai-rooms-pkg/commit/bbd23798d6460b50f8f4e3234133a03400fef03e))
+
+- Doc
+  ([`1316b34`](https://github.com/synvex-ai/openai-rooms-pkg/commit/1316b34086ceb5546e335e93896e6f3493c20a71))
+
+- Parameters handling
+  ([`cdb3e33`](https://github.com/synvex-ai/openai-rooms-pkg/commit/cdb3e33658216e6c16d881f19f494aaa30bdbb4b))
+
+- **cicd**: Ruff
+  ([`7386352`](https://github.com/synvex-ai/openai-rooms-pkg/commit/73863522a5d31ae1063f75b014fdd2e417d38272))
+
+
 ## v1.0.9 (2025-09-17)
 
 ### Bug Fixes
