@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.11 (2025-12-04)
+
+### Bug Fixes
+
+- **docs**: Missing correct doc
+  ([`e08c9ed`](https://github.com/nexroo-ai/openai-rooms-pkg/commit/e08c9edae204011dffc981441a2a89a70352d868))
+
+
 ## v1.0.10 (2025-10-20)
 
 ### Bug Fixes
